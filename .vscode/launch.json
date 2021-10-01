@@ -1,0 +1,29 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Stitcher: campus rain",
+            "type": "python",
+            "request": "launch",
+            "module": "stitcher",
+            "args": [
+                "--path","img/campus rain",
+                "--output", "img/pano.png"
+            ]
+        },
+        {
+            "name": "Stitcher: riverside far",
+            "type": "python",
+            "request": "launch",
+            "module": "stitcher",
+            "args": [
+                "--path","img/riverside far",
+                "--output", "img/pano.png",
+                "--rescale-factor", "0.4"
+            ]
+        }
+    ]
+}
