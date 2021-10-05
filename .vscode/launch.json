@@ -24,6 +24,17 @@
                 "--output", "img/pano.png",
                 "--rescale-factor", "0.4"
             ]
+        },
+        {
+            "name": "Stitcher: waterfall",
+            "type": "python",
+            "request": "launch",
+            "module": "stitcher",
+            "args": [
+                "--path","img/waterfall",
+                "--output", "img/pano.png",
+                "--rescale-factor", "0.4"
+            ]
         }
     ]
 }
