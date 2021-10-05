@@ -3,6 +3,7 @@
 from argparse import ArgumentParser
 from pathlib import Path
 import cv2
+from stitcher.compositing import PanoramaCompositor
 from stitcher.images import ImageCollection
 from stitcher.features import FeatureHandler
 
@@ -71,3 +72,5 @@ if __name__ == "__main__":
 
     # cv2.destroyAllWindows()
     # END TEST
+
+    compositor = PanoramaCompositor(image_collection, feature_handler)
