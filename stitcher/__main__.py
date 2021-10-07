@@ -3,7 +3,7 @@
 from argparse import ArgumentParser
 from pathlib import Path
 import cv2
-#from stitcher.compositing import PanoramaCompositor
+from stitcher.compositing import PanoramaCompositor
 from stitcher.images import ImageCollection
 from stitcher.features import FeatureHandler
 

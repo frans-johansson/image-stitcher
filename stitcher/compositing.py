@@ -1,6 +1,8 @@
 """Handles transformations and compositing of multiple images onto a single, seamless panorama"""
 
 from typing import Tuple
+
+import cv2
 from stitcher.features import FeatureHandler
 from stitcher.images import ImageCollection
 import numpy as np
@@ -98,3 +100,30 @@ class PanoramaCompositor:
                 neighbor for neighbor in self.overlaps[next_img]
                 if neighbor not in pasted_images
             })
+            pass
+
+    def _compute_homography(self, img_ind: int) -> np.ndarray: #TODO: np.ndarray correct return type?
+        """Computes the homography given an image and the reference image. Return the homography.
+        
+        Args:
+            img_ind: Index for an image.
+        """
+        #TODO: Find image added to composite with matches to imd_ind image
+        ref_kp = self.features[self.reference_img]
+        img_kp = self.features[img_ind]
+        
+        ref_points = np.array([ref_kp[m.queryIdx].pt for m in self.matches[ref_kp][img_ind]]) #TODO: queryId or trainId?
+        img_points = np.array([img_kp[m.trainIdx].pt for m in self.matches[img_ind][ref_kp]])
+
+        h, _ = cv2.findHomography(ref_points, img_points, method=cv2.RANSAC)
+
+        return h
+
+    def _perspective_transformation(self, img_ind: int, h: np.ndarray):
+        """Performs perspective transformation of an image onto the reference image, given the homography matrix between the image pair.
+        
+        Args:
+            img_ind: Index for the image that will be transformed.
+            h: Homography matrix
+        """
+        pass
