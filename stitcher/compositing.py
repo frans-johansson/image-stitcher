@@ -42,16 +42,17 @@ class PanoramaCompositor:
         self.overlaps = {i: [j for j in self.matches[i].keys()] for i in self.matches.keys()}
         self.reference_img = self._find_reference_img()
         self.width, self.height, self.offset = self._compute_bounding_box()
-        self.composite = np.fill([self.num_images, self.width, self.height, 3], -1)
+        self.composite = np.full([self.num_images, self.width, self.height, 3], -1)
 
 
-    def _find_reference_img() -> int:
+
+    def _find_reference_img(self) -> int:
         """
         Finds the index of the reference image for the composite based on the
         overlap graph
 
         Returns:
-            refernce_img: The index of the reference image in the ImageCollection
+            reference_img: The index of the reference image in the ImageCollection
         """
         # TODO: Implement
         return 0
