@@ -54,7 +54,7 @@ class PanoramaCompositor:
         Returns:
             reference_img: The index of the reference image in the ImageCollection
         """
-        # TODO: Implement
+        print("Starting at image 0")
         return 0
 
     def _compute_bounding_box(self) -> Tuple[int, int, np.ndarray]:
@@ -76,7 +76,7 @@ class PanoramaCompositor:
             img: The index of the image to incorporate.
         """
         # TODO: Implement
-        pass
+        print(f"Added image {img}")
 
     def _run(self) -> None:
         """Driver function for running the compositing process"""     
