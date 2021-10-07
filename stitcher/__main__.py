@@ -3,7 +3,7 @@
 from argparse import ArgumentParser
 from pathlib import Path
 import cv2
-from stitcher.compositing import PanoramaCompositor
+#from stitcher.compositing import PanoramaCompositor
 from stitcher.images import ImageCollection
 from stitcher.features import FeatureHandler
 
@@ -56,7 +56,7 @@ if __name__ == "__main__":
 
     # for i, i_matches in matches.items():
     #     for j, ij_matches in i_matches.items():
-    #         ms = ij_matches[0].getMatches()
+    #         ms = ij_matches
     #         sorted(ms, key=lambda x: x.distance)
 
     #         kp1 = feature_handler.image_features[i].getKeypoints()
