@@ -8,11 +8,13 @@ import numpy as np
 class FeatureHandler:
     """
     Takes a list of images and detects and stores the features for all images. 
-    Then matches the features to other images.
+    Matches the features to other iamges and stores matches in a dictionary.
 
     Members:
-        image_features: A list with a lists of features, where the list index corresponds to the image the features belong to.
-        feature_matches: A dictionary containing feature matches between pai
+        image_features: a list with a lists of features, where the list index corresponds to the image the features belong to.
+        feature_matches: a dictionary containing feature matches between pairs of images. 
+        match_conf: a matching confidence threshold for best-of-2 matching.
+        overlap_thresh: Minimum number of feature matches between two image pairs allowed.
     """
 
     def __init__(self, images: List[np.ndarray], match_conf: float = 0.5, overlap_thresh: int = 20):
@@ -45,8 +47,11 @@ class FeatureHandler:
         """
         Matches features in a set of images to each other and stores matches in a dictionary.
 
-        TODO: Add more documentation about the matches dictionary structure and matches arrays coming
-        in pair of i->j and j->i.
+        The dictionary of matches is a nested dictionary. The first key in the dictionary is an image index i. The item in the dictionary is another dictionary, 
+        where the key is image index j making up image pair i->j. Connected to key j is a list of match objects of matches between i->j.
+        
+        Example showing the structure of the dictionary:
+            {0: {1: [...]}, 1: {0: [...], 2: [...]}, 2: {1: [...]}}
         """
         match_dict = {}
 
@@ -55,15 +60,15 @@ class FeatureHandler:
         image_pairs = itertools.combinations(range(len(self.image_features)), 2)
 
         for i, j in image_pairs:
-            matches = [bo2nm.apply(self.image_features[i], self.image_features[j])]
-            matches += [bo2nm.apply(self.image_features[j], self.image_features[i])]
+            i_matches = bo2nm.apply(self.image_features[i], self.image_features[j]).getMatches()
+            j_matches = bo2nm.apply(self.image_features[j], self.image_features[i]).getMatches()
             
-            if sum([len(m.getMatches()) for m in matches]) < self.overlap_thresh:
+            if (len(i_matches) + len(j_matches)) < self.overlap_thresh:
                 continue
             
             match_dict.setdefault(i, {})
             match_dict.setdefault(j, {})
-            match_dict[i].setdefault(j, matches)
-            match_dict[j].setdefault(i, matches[::-1])
+            match_dict[i].setdefault(j, i_matches)
+            match_dict[j].setdefault(i, j_matches)
 
         return match_dict
