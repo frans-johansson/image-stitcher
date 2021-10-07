@@ -17,7 +17,8 @@ class PanoramaCompositor:
         matches: Matches extracted from the supplied FeatureHandler.
         features: Features extracted from the supplied FeatureHandler.
         overlaps: Book-keeping dictionary for what images can be incorporated into the panorama next.
-            Structured like {image: [overlapping images], ...}. Is updated throughout the compositing process.
+            Structured like {image: {overlapping images}, ...}, i.e. a dictionary of sets. Is updated
+            throughout the compositing process.
         reference_img: Index for the selected reference image
         offset: A two-dimensional array representing the [x, y] offset that should be applied to each image
         width: The width of the final composite in pixels.
@@ -39,11 +40,12 @@ class PanoramaCompositor:
         self.matches = feature_handler.feature_matches
         self.features = feature_handler.image_features
 
-        self.overlaps = {i: [j for j in self.matches[i].keys()] for i in self.matches.keys()}
+        self.overlaps = {i: {j for j in self.matches[i].keys()} for i in self.matches.keys()}
         self.reference_img = self._find_reference_img()
         self.width, self.height, self.offset = self._compute_bounding_box()
         self.composite = np.full([self.num_images, self.width, self.height, 3], -1)
 
+        self._run()
 
 
     def _find_reference_img(self) -> int:
@@ -79,14 +81,20 @@ class PanoramaCompositor:
         print(f"Added image {img}")
 
     def _run(self) -> None:
-        """Driver function for running the compositing process"""     
-        num_pasted = 0
-
-        while num_pasted <= self.num_images:
+        """Driver function for running the compositing process"""
+        pasted_images = [self.reference_img]     
+        
+        while len(self.overlaps[self.reference_img]) > 0:
             # 1. Find the next image to extend with
             #    using the overlap graph
+            next_img = self.overlaps[self.reference_img].pop()
 
             # 2. Extend with that image
+            self._extend(next_img)
+            pasted_images += [next_img]
 
             # 3. Update the overlap graph
-            pass
+            self.overlaps[self.reference_img] = self.overlaps[self.reference_img].union({
+                neighbor for neighbor in self.overlaps[next_img]
+                if neighbor not in pasted_images
+            })
