@@ -3,6 +3,7 @@
 from typing import Tuple
 
 import cv2
+from numpy.lib.shape_base import expand_dims
 from stitcher.features import FeatureHandler
 from stitcher.images import ImageCollection
 import numpy as np
@@ -46,6 +47,10 @@ class PanoramaCompositor:
         self.reference_img = self._find_reference_img()
         self.width, self.height, self.offset = self._compute_bounding_box()
         self.composite = np.full([self.num_images, self.width, self.height, 3], -1)
+        
+        self.images = images.high_res_images #NOTE: Should this be high res?
+
+        self.composite = np.expand_dims(self.images[self.reference_img], axis = 0)
 
         self._run()
 
@@ -58,7 +63,19 @@ class PanoramaCompositor:
         Returns:
             reference_img: The index of the reference image in the ImageCollection
         """
-        print("Starting at image 0")
+        max_len = 0
+        ref = 0
+        for i in self.matches:
+            numb_pairs = len(self.matches[i])
+            if numb_pairs > max_len:
+                max_len = numb_pairs
+                ref = i
+
+        #b = [(len(self.matches[i]), i) for i, m in enumerate(self.matches)]
+
+        #b = [i for i in self.matches if len(self.matches[i]) > max_len ]
+
+        print(f"Starting at image {ref}")
         return 0
 
     def _compute_bounding_box(self) -> Tuple[int, int, np.ndarray]:
@@ -70,7 +87,7 @@ class PanoramaCompositor:
                 a two-dimensional array with [offset x, offset y].
         """
         # TODO: Implement
-        return (200, 100, np.array([50, 50]))
+        return (1000, 2000, np.array([50, 50]))
 
     def _extend(self, img: int) -> None:
         """
@@ -80,6 +97,16 @@ class PanoramaCompositor:
             img: The index of the image to incorporate.
         """
         # TODO: Implement
+        h = self._compute_homography(img)
+        a = self._perspective_transformation(img, h)
+        a = np.expand_dims(a, axis = 0)
+        np.concatenate((self.composite, a), axis = 0)
+
+        image = self.composite.astype(np.uint8)
+
+        # cv2.imshow("Composite image", image[0])
+        # cv2.waitKey(0)
+
         print(f"Added image {img}")
 
     def _run(self) -> None:
@@ -108,12 +135,17 @@ class PanoramaCompositor:
         Args:
             img_ind: Index for an image.
         """
-        #TODO: Find image added to composite with matches to imd_ind image
-        ref_kp = self.features[self.reference_img]
+
+        if(img_ind in self.matches[self.reference_img]):
+            ref_im = self.reference_img
+        else:
+            ref_im = next(iter(self.matches[img_ind]))
+
+        ref_kp = self.features[ref_im]
         img_kp = self.features[img_ind]
-        
-        ref_points = np.array([ref_kp[m.queryIdx].pt for m in self.matches[ref_kp][img_ind]]) #TODO: queryId or trainId?
-        img_points = np.array([img_kp[m.trainIdx].pt for m in self.matches[img_ind][ref_kp]])
+
+        ref_points = np.array([ref_kp.getKeypoints()[m.queryIdx].pt for m in self.matches[ref_im][img_ind]])
+        img_points = np.array([img_kp.getKeypoints()[m.trainIdx].pt for m in self.matches[ref_im][img_ind]])
 
         h, _ = cv2.findHomography(ref_points, img_points, method=cv2.RANSAC)
 
@@ -126,4 +158,54 @@ class PanoramaCompositor:
             img_ind: Index for the image that will be transformed.
             h: Homography matrix
         """
-        pass
+
+        ref_shape = self.images[self.reference_img].shape
+        ref_ul = [0, 0]
+        ref_lr = [ref_shape[0], ref_shape[1]]
+        ref_ur = [0, ref_shape[1]]
+        ref_ll = [ref_shape[0], 0]
+        ref_corners = [ref_ul, ref_ur, ref_ll, ref_lr]
+
+        # Project image corners
+        h_inv = np.linalg.inv(h)
+        proj_im_r = []
+        proj_im_c = []
+        for c in ref_corners:
+            coord = h_inv @ np.array([[c[1]], [c[0]], [1]])
+            u_1 = int(coord[0] / coord[2])
+            v_1 = int(coord[1] / coord[2])
+            proj_im_c.append(u_1)
+            proj_im_r.append(v_1)
+
+        v0_ul = min(proj_im_r)
+        u0_ul = min(proj_im_c)
+        v0_lr = max(ref_shape[0] - 1, max(proj_im_r))
+        u0_lr = max(ref_shape[1] - 1, max(proj_im_c))
+        new_r = v0_lr - v0_ul + 1
+        new_c = u0_lr - u0_ul + 1
+
+        r0 = ref_shape[0]
+        c0 = ref_shape[1]
+
+        warped_im = np.full((new_r, new_c, 3), -1)
+        h_inv = np.linalg.inv(h)
+        for u in range(warped_im.shape[0]):
+            for v in range(warped_im.shape[1]):
+                coord = h_inv @ np.array([[u], [v], [1]])
+                u_1 = int(coord[0] / coord[2])
+                v_1 = int(coord[1] / coord[2])
+                try:
+                    warped_im[v, u] = self.images[img_ind][v_1, u_1]
+                    #warped_im[v, u] = img2[v, u]
+                except IndexError:
+                    pass
+
+        image = warped_im.astype(np.uint8)
+
+        cv2.imshow(f"Warped im {(img_ind)}", image)
+        cv2.waitKey(0)
+
+        return warped_im
+
+        
+
