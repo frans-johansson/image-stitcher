@@ -19,7 +19,7 @@ print(mask.shape)
 
 list_overlap = maskFinder.get_overlap(3)
 
-print(list_overlap[5])
+print(list_overlap[5]) # Should say [50, 5, 0]
 
 """
 comb_img = np.zeros(imgs.shape[1:])

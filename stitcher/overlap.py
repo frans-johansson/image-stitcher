@@ -1,6 +1,7 @@
 """Finds a mask for the overlapping areas between the images in the panorama."""
 
 import numpy as np
+import itertools
 
 class OverlapMask:
     """
@@ -22,7 +23,7 @@ class OverlapMask:
         self.projected_images = projected_images
         assert self.projected_images.ndim == 4, "Projected images have incorrect dimensions"
         #self.index_mask, self.bool_mask = self._find_overlap_mask()
-        self.overlap_dict, self.mask = self._find_overlap()
+        self.overlap_data, self.mask = self._find_overlap()
 
 
     def get_mask(self):
@@ -38,9 +39,11 @@ class OverlapMask:
         Args:
             idx: Image index of the image to find overlaps for.
         """
-        assert idx < self.projected_images.shape[0]
-        return self.overlap_dict[idx]
+        assert idx < self.projected_images.shape[0], "There is no image " + str(idx)
+        return self.overlap_data[idx]
 
+    def _if_overlap(self, arr):
+        return np.sum(arr) >= 2
 
     def _find_overlap(self):
         """
@@ -49,24 +52,25 @@ class OverlapMask:
         Returns:
             mask: A RxC array with lists containting the indicies of all images having a valid pixel 
         """
-        overlap_dict = {}
+        overlap_data = {}
 
         for i in range(self.projected_images.shape[0]):
-            overlap_dict[i] = []
+            overlap_data[i] = []
 
         mask = np.all(self.projected_images >= 0, axis=3)
 
-        for i in range(mask.shape[0]):
+        for i in range(mask.shape[0]):          # Two first loops will together have length of the nunmber of combinations between images
             for j in range(i+1,mask.shape[0]):
                 temp_mask = np.logical_and(mask[i], mask[j])
                 idx = np.argwhere(temp_mask)
-                for k in range(idx.shape[0]):
-                    overlap_dict[i].append([idx[k, 0], idx[k, 1], j])
-                    overlap_dict[j].append([idx[k, 0], idx[k, 1], i])
 
-        mask = np.any(mask, axis=0)
+                for k in range(idx.shape[0]):           # This for-loop will have length of the number of overlapping pixels
+                    overlap_data[i].append([idx[k, 0], idx[k, 1], j])
+                    overlap_data[j].append([idx[k, 0], idx[k, 1], i])
 
-        return overlap_dict, mask
+        mask = np.apply_along_axis(self._if_overlap, 0, mask)
+
+        return overlap_data, mask
 
 
     def add_nonoverlap_to_image(self, image):
