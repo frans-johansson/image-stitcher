@@ -26,15 +26,7 @@ comb_img = np.zeros(imgs.shape[1:])
 
 print(comb_img.shape)
 
-print(maskFinder.num_overlap(0,0))
-print(maskFinder.num_overlap(51,51))
-print(maskFinder.num_overlap(61,61))
-print(maskFinder.num_overlap(0,98))
-
 comb_image = maskFinder.add_nonoverlap_to_image(comb_img)
-
-print(comb_img[1,1,0])
-print(comb_img[98, 98, 0])
 """
 plt.imshow(mask)
 plt.show()

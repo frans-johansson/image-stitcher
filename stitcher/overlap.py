@@ -43,6 +43,15 @@ class OverlapMask:
         return self.overlap_data[idx]
 
     def _if_overlap(self, arr):
+        """
+        Checks if there is an overlap between any number of images in the current position.
+
+        Args:
+            Arr: An 1D bool array with the length of the number of images.
+
+        Returns:
+            A bool, returns True if there are at least two True values in the bool array, otherwise False.
+        """
         return np.sum(arr) >= 2
 
     def _find_overlap(self):
@@ -59,15 +68,19 @@ class OverlapMask:
 
         mask = np.all(self.projected_images >= 0, axis=3)
 
-        for i in range(mask.shape[0]):          # Two first loops will together have length of the nunmber of combinations between images
-            for j in range(i+1,mask.shape[0]):
+        # Loop through all combinations of image pairs
+        for i, j in list(itertools.combinations(range(mask.shape[0]), 2)):  # This loop will have length of the nunmber of combinations between images
+                # Find indices where overlaps occur between the two images
                 temp_mask = np.logical_and(mask[i], mask[j])
                 idx = np.argwhere(temp_mask)
 
-                for k in range(idx.shape[0]):           # This for-loop will have length of the number of overlapping pixels
-                    overlap_data[i].append([idx[k, 0], idx[k, 1], j])
-                    overlap_data[j].append([idx[k, 0], idx[k, 1], i])
+                # Add indices of pixel and overlapping image to the dictionary
+                for r, c in idx:           # This for-loop will have length of the number of overlapping pixels
+                    overlap_data[i].append([r, c, j])
+                    overlap_data[j].append([r, c, i])
 
+        # Apply the if_overlap function to each pixel, value becomes True if
+        # there are at least two images that has values in that pixel, otherwise False
         mask = np.apply_along_axis(self._if_overlap, 0, mask)
 
         return overlap_data, mask
