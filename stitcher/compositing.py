@@ -43,12 +43,12 @@ class PanoramaCompositor:
         self.matches = feature_handler.feature_matches
         self.features = feature_handler.image_features
 
+        self.images = images.high_res_images #NOTE: Should this be high res?
+
         self.overlaps = {i: {j for j in self.matches[i].keys()} for i in self.matches.keys()}
         self.reference_img = self._find_reference_img()
         self.width, self.height, self.offset = self._compute_bounding_box()
         self.composite = np.full([self.num_images, self.width, self.height, 3], -1)
-        
-        self.images = images.high_res_images #NOTE: Should this be high res?
 
         self.composite = np.expand_dims(self.images[self.reference_img], axis = 0)
 
@@ -63,6 +63,7 @@ class PanoramaCompositor:
         Returns:
             reference_img: The index of the reference image in the ImageCollection
         """
+        # TODO: Check if reference img matches with all other images
         max_len = 0
         ref = 0
         for i in self.matches:
@@ -86,8 +87,42 @@ class PanoramaCompositor:
             (width, height, offset): The width and height given as integers. The offset given as
                 a two-dimensional array with [offset x, offset y].
         """
-        # TODO: Implement
-        return (1000, 2000, np.array([50, 50]))
+        min_coord = [0, 0]
+        max_coord = [0, 0]
+        ref_im = self.images[self.reference_img]
+        ref_ul = [0, 0]
+        ref_ur = [0, ref_im.shape[1]]
+        ref_ll = [ref_im.shape[0], 0]
+        ref_lr = [ref_im.shape[0], ref_im.shape[1]]
+        ref_corners = [ref_ul, ref_ur, ref_ll, ref_lr]
+        
+        for ind in self.overlaps[self.reference_img]:
+            h = self._compute_homography(ind)         
+
+            img_row = []
+            img_col = []
+            #warped_im = np.full((self.composite.shape[1], self.composite.shape[2], self.composite.shape[3]), -1)
+            h_inv = np.linalg.inv(h)
+            for u, v in ref_corners:
+                coord = h_inv @ np.array([[u], [v], [1]])
+                u_1 = int(coord[0] / coord[2])
+                v_1 = int(coord[1] / coord[2])
+
+                img_row.append(v_1)
+                img_col.append(u_1)
+
+            min_r = min(min_coord[0], min(ref_im.shape[0], min(img_row)))
+            min_c = min(min_coord[1], min(ref_im.shape[1], min(img_col)))
+            max_r = max(max_coord[0], max(ref_im.shape[0] - 1, max(img_row)))
+            max_c = max(max_coord[1], max(ref_im.shape[1] - 1, max(img_col)))
+
+        row = max_r - min_r
+        col = max_c - min_c
+
+        offset = np.array([min_r, min_c])
+            
+
+        return (row, col, offset)
 
     def _extend(self, img: int) -> None:
         """
@@ -123,10 +158,11 @@ class PanoramaCompositor:
             pasted_images += [next_img]
 
             # 3. Update the overlap graph
-            self.overlaps[self.reference_img] = self.overlaps[self.reference_img].union({
-                neighbor for neighbor in self.overlaps[next_img]
-                if neighbor not in pasted_images
-            })
+            # TODO: Skip this step to only get images overlapping with reference img
+            #self.overlaps[self.reference_img] = self.overlaps[self.reference_img].union({
+            #    neighbor for neighbor in self.overlaps[next_img]
+            #    if neighbor not in pasted_images
+            #})
             pass
 
     def _compute_homography(self, img_ind: int) -> np.ndarray: #TODO: np.ndarray correct return type?
@@ -187,7 +223,7 @@ class PanoramaCompositor:
         r0 = ref_shape[0]
         c0 = ref_shape[1]
 
-        warped_im = np.full((new_r, new_c, 3), -1)
+        warped_im = np.full((self.composite.shape[1], self.composite.shape[2], self.composite.shape[3]), -1)
         h_inv = np.linalg.inv(h)
         for u in range(warped_im.shape[0]):
             for v in range(warped_im.shape[1]):
@@ -195,7 +231,7 @@ class PanoramaCompositor:
                 u_1 = int(coord[0] / coord[2])
                 v_1 = int(coord[1] / coord[2])
                 try:
-                    warped_im[v, u] = self.images[img_ind][v_1, u_1]
+                    warped_im[v + 50, u + 50] = self.images[img_ind][v_1, u_1]
                     #warped_im[v, u] = img2[v, u]
                 except IndexError:
                     pass
