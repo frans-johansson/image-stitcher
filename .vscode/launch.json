@@ -11,7 +11,7 @@
             "module": "stitcher",
             "args": [
                 "--path","img/campus rain",
-                "--output", "img/pano.png"
+                "--output", "campus_rain"
             ]
         },
         {
@@ -21,7 +21,7 @@
             "module": "stitcher",
             "args": [
                 "--path","img/riverside far",
-                "--output", "img/pano.png",
+                "--output", "riverside_far",
                 "--rescale-factor", "0.4"
             ]
         },
@@ -32,7 +32,7 @@
             "module": "stitcher",
             "args": [
                 "--path","img/waterfall",
-                "--output", "img/pano.png",
+                "--output", "waterfall",
                 "--rescale-factor", "0.4"
             ]
         }
