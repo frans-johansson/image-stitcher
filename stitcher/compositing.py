@@ -29,6 +29,9 @@ class PanoramaCompositor:
         height: The height of the final composite in pixels.
         composite: The final composite RGB image. Strucutured like a NxWxHx3 array, where N is the number of
             input images, W is the width and H is the height.
+        weights: Linear weights for each image in the panorama based on their grassfire transform. Structured
+            like an NxWxH array of scalar values between 0 and 1, where N is the number of input images W is
+            the width and H is the height.
     """
 
     def __init__(self, images: ImageCollection, feature_handler: FeatureHandler) -> None:
@@ -49,12 +52,12 @@ class PanoramaCompositor:
         self.overlaps = {i: {j for j in self.matches[i].keys()} for i in self.matches.keys()}
         self.reference_img = self._find_reference_img()
         self.height, self.width, self.offset = self._compute_bounding_box()
-        self.composite = np.full([self.num_images, self.height, self.width, 3], -1)
+        self.composite = np.full([self.num_images, self.height, self.width, 3], -1, dtype="int8")
+        self.weights = np.full([self.num_images, self.height, self.width, 1], 0.0, dtype="float32")
 
         self.composite[self.reference_img] = self._perspective_transformation(self.images[self.reference_img], np.eye(3))
 
         self._run()
-
 
     def _find_reference_img(self) -> int:
         """
@@ -110,6 +113,29 @@ class PanoramaCompositor:
         offset = np.array([min_u, min_v])
             
         return (height.item(), width.item(), offset)
+
+    def _compute_image_weights(self, img: int) -> np.ndarray:
+        """
+        Computes and returns the linear weight map for the given image index.
+        This map can be used directly for blending linearly, i.e feathering,
+        raised to some power before linearly blending or for multi-band blending
+
+        Args:
+            img: The index of the image to compute the weight map for
+        
+        Returns:
+            weight_map: An WxH grayscale image where values range from 0 to 1 depending on
+                their proximity to the center of the image. Higher values being closer to the center.
+        """
+        height, width, _ = self.images[img].shape
+        x, y = np.meshgrid(np.arange(width), np.arange(height))
+
+        def w(p, n):
+            """Internal function for computing and normalizing weights"""
+            weights = np.abs(p - n/2)
+            return (weights - np.max(weights)) / (np.min(weights) - np.max(weights))
+        
+        return (w(x, width) * w(y, height))[..., np.newaxis]  # Needs to be (width, height, 1)
 
     def _extend(self, img: int) -> None:
         """
