@@ -3,26 +3,28 @@
 import numpy as np
 import itertools
 from scipy.optimize import least_squares
+from stitcher.compositing import PanoramaCompositor
 
 class GainCompensator:
     """
     Takes a composite of images and calculates and applies the gain for each one.
 
     Members:
-        projected_images: An array of images that has been perspective projected.
+        composite: An array of images that has been perspective projected.
         overlap_data: A dictionary holding the values of all overlapping pixels between the images.
     """
 
-    def __init__(self, projected_images):
+    def __init__(self, compositor: PanoramaCompositor):
         """
         Initializes the gain compensator.
 
         Args:
-            projected_images: A NxRxCx3 array, where N is the number of images, R is the number of rows in each image
+            composite: A NxRxCx3 array, where N is the number of images, R is the number of rows in each image
             and C is the number of columns in each image.
         """
-        self.projected_images = projected_images
-        assert self.projected_images.ndim == 4, "Projected images have incorrect dimensions"
+        self.compositor = compositor
+        self.composite = compositor.composite
+        assert self.composite.ndim == 4, "Projected images have incorrect dimensions"
         self.overlap_data = self._find_overlap()
 
     def _find_overlap(self):
@@ -34,10 +36,10 @@ class GainCompensator:
         """
         overlap_data = {}
 
-        for i in range(self.projected_images.shape[0]):
+        for i in range(self.composite.shape[0]):
             overlap_data[i] = {}
 
-        mask = np.all(self.projected_images >= 0, axis=3)
+        mask = np.all(self.composite >= 0, axis=3)
 
         # Loop through all combinations of image pairs
         for i, j in list(itertools.combinations(range(mask.shape[0]), 2)):
@@ -50,8 +52,8 @@ class GainCompensator:
 
                 # Add indices of pixel and overlapping image to the dictionary
                 for r, c in idx:
-                    overlap_data[i][j].append(self.projected_images[i, r, c, :])
-                    overlap_data[j][i].append(self.projected_images[j, r, c, :])
+                    overlap_data[i][j].append(self.composite[i, r, c, :])
+                    overlap_data[j][i].append(self.composite[j, r, c, :])
 
         self.mask = mask
 
@@ -72,7 +74,7 @@ class GainCompensator:
         sigma_n = 10
         sigma_g = 0.1
 
-        for i, j in list(itertools.permutations(range(self.projected_images.shape[0]), 2)):
+        for i, j in list(itertools.permutations(range(self.composite.shape[0]), 2)):
             if len(self.overlap_data[i][j]) != 0:
 
                 mean_ij = np.mean(np.sum(self.overlap_data[i][j], axis=1)/3)
@@ -90,7 +92,7 @@ class GainCompensator:
             A matrix with the approxiamted gain values.
         """
         # Initialize the gain values to ones.
-        g = np.ones((self.projected_images.shape[0]))
+        g = np.ones((self.composite.shape[0]))
 
         # Run minimizer
         res = least_squares(
@@ -109,17 +111,19 @@ class GainCompensator:
         map them back to range 0-255, with values -1 where there are no pixel values.
 
         Returns:
-            The gain compensated images, same size as self.projected_images.
+            The gain compensated images, same size as self.composite.
         """
         # Calculate the gain values
         g = self._calculate_gain()
 
         # Multiply with the gain in pixels that do not have value -1, let those pixels keep the value -1
-        imgs = np.where(self.projected_images != -1, g[:, np.newaxis, np.newaxis, np.newaxis] * self.projected_images, -1)
+        imgs = np.where(self.composite != -1, g[:, np.newaxis, np.newaxis, np.newaxis] * self.composite, -1)
 
         # Rescale the values to be integers between 0-255, except for non-pixel values that are -1
         imgs = (imgs / np.max(imgs)) * 255
         imgs[imgs < 0] = - 1
         imgs = np.floor(imgs)
 
-        return imgs
+        self.compositor.composite = imgs
+
+        return self.compositor

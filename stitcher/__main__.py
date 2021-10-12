@@ -8,6 +8,7 @@ from stitcher.blending import LinearBlender
 from stitcher.compositing import PanoramaCompositor
 from stitcher.images import ImageCollection
 from stitcher.features import FeatureHandler
+from stitcher.gain import GainCompensator
 
 if __name__ == "__main__":
     # Handle command line arguments
@@ -75,6 +76,7 @@ if __name__ == "__main__":
     # END TEST
 
     compositor = PanoramaCompositor(image_collection, feature_handler)
+    compositor = GainCompensator(compositor).gain_compensate()
     result = LinearBlender(compositor).render()
 
     timestamp = dt.datetime.now().strftime("%d%m%y_%H%M")
