@@ -52,7 +52,7 @@ class PanoramaCompositor:
         self.overlaps = {i: {j for j in self.matches[i].keys()} for i in self.matches.keys()}
         self.reference_img = self._find_reference_img()
         self.height, self.width, self.offset = self._compute_bounding_box()
-        self.composite = np.full([self.num_images, self.height, self.width, 3], -1, dtype="int8")
+        self.composite = np.full([self.num_images, self.height, self.width, 3], -1, dtype="uint8")
         self.weights = np.full([self.num_images, self.height, self.width, 1], 0.0, dtype="float32")
 
         # Paste in the reference image and its weight map
