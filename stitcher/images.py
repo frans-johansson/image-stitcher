@@ -37,7 +37,9 @@ class ImageCollection:
             rescale_factor: Rescale the images by this factor
         """
         # FIXME: Handle both png and jpg here
-        image_files = [str(file) for file in path.rglob("*.jpg")]
+        file_types = ["*.jpg", "*.png"]
+        image_files = [str(file) for type in file_types for file in path.rglob(type)]
+
         color_images = [cv2.imread(image) for image in image_files]
         grayscale_images = [cv2.cvtColor(image, cv2.COLOR_RGB2GRAY) for image in color_images]
 
