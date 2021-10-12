@@ -27,20 +27,19 @@ class ImageCollection:
         low_res_images: A list of grayscale images in a lower resolution to be used for transform estimation  
     """
 
-    def __init__(self, path: Path, high_res_scale: float, low_res_scale: float) -> None:
+    def __init__(self, path: Path, rescale_factor: float) -> None:
         """
         Initializes an image collection from a path to the images. Reads and pre-processes all
         images upon initialization.
 
         Args:
             path: A path object to the location of the images
-            high_res_scale: Scaling factor for the high-resolution color images
-            high_res_scale: Scaling factor for the low-resolution grayscale images
+            rescale_factor: Rescale the images by this factor
         """
         # FIXME: Handle both png and jpg here
         image_files = [str(file) for file in path.rglob("*.jpg")]
         color_images = [cv2.imread(image) for image in image_files]
         grayscale_images = [cv2.cvtColor(image, cv2.COLOR_RGB2GRAY) for image in color_images]
 
-        self.high_res_images = [rescale_image(image, high_res_scale) for image in color_images]
-        self.low_res_images = [rescale_image(image, low_res_scale) for image in grayscale_images]
+        self.high_res_images = [rescale_image(image, rescale_factor) for image in color_images]
+        self.low_res_images = [rescale_image(image, rescale_factor) for image in grayscale_images]

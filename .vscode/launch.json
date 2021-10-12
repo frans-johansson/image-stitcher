@@ -22,7 +22,7 @@
             "args": [
                 "--path","img/riverside far",
                 "--output", "riverside_far",
-                "--rescale-factor", "0.4"
+                "--rescale-factor", "0.5"
             ]
         },
         {
@@ -33,7 +33,7 @@
             "args": [
                 "--path","img/waterfall",
                 "--output", "waterfall",
-                "--rescale-factor", "0.4"
+                "--rescale-factor", "0.5"
             ]
         }
     ]

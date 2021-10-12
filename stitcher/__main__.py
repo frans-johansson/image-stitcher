@@ -36,8 +36,7 @@ if __name__ == "__main__":
     # Load image collection from the filesystem
     image_collection = ImageCollection(
         path=args.path,
-        high_res_scale=args.rescale_factor,
-        low_res_scale=args.rescale_factor / 2
+        rescale_factor=args.rescale_factor
     )
 
     # TEST: Display all the images
