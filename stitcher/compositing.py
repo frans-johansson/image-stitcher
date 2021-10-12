@@ -1,13 +1,10 @@
 """Handles transformations and compositing of multiple images onto a single, seamless panorama"""
 
 from typing import Tuple
-
 import cv2
-from numpy.lib.shape_base import expand_dims
 from stitcher.features import FeatureHandler
 from stitcher.images import ImageCollection
 import numpy as np
-import matplotlib.pyplot as plt
 
 class PanoramaCompositor:
     """
@@ -73,7 +70,7 @@ class PanoramaCompositor:
         Returns:
             reference_img: The index of the reference image in the ImageCollection
         """
-        ref = max([(len(self.matches[i]), i) for i in self.matches])[1]
+        ref = max([(sum([len(self.matches[i][j]) for j in self.matches[i]]), i) for i in self.matches])[1]
 
         print(f"Starting at image {ref}")
         return ref
