@@ -4,7 +4,7 @@ import datetime as dt
 from argparse import ArgumentParser
 from pathlib import Path
 import cv2
-from stitcher.blending import LinearBlender
+from stitcher.blending import LinearBlender, NoBlender
 from stitcher.compositing import PanoramaCompositor
 from stitcher.images import ImageCollection
 from stitcher.features import FeatureHandler
@@ -76,7 +76,9 @@ if __name__ == "__main__":
     # END TEST
 
     compositor = PanoramaCompositor(image_collection, feature_handler)
-    result = LinearBlender(compositor).render()
+    no_blend_result = NoBlender(compositor).render()
+    linear_result = LinearBlender(compositor).render()
 
     timestamp = dt.datetime.now().strftime("%d%m%y_%H%M")
-    cv2.imwrite(f"img/{args.output}_{timestamp}.jpg", result)
+    cv2.imwrite(f"img/{args.output}_{timestamp}_linear.jpg", linear_result)
+    cv2.imwrite(f"img/{args.output}_{timestamp}_no_blend.jpg", no_blend_result)

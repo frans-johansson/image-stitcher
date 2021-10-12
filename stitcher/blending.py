@@ -3,6 +3,25 @@
 import numpy as np
 from stitcher.compositing import PanoramaCompositor
 
+class NoBlender:
+    """Renders images without blending, using the painter's algorithm"""
+
+    def __init__(self, compositor: PanoramaCompositor) -> None:
+        """Initialize the blender from a `PanoramaCompositor`"""
+        self.composite = compositor.composite
+        self.weights = compositor.weights
+        self.width = compositor.width
+        self.height = compositor.height
+
+    def render(self) -> None:
+        """Renders and returns a final panorama image"""
+        img = np.zeros((self.height, self.width, 3), dtype="uint8")
+        for i, layer in enumerate(self.composite):
+            w = (self.weights[i] > 0).squeeze(2)
+            img[w] = layer[w]
+        return img
+
+
 class LinearBlender:
     """Blends images in a composite linearly using the weights associated with each pixel value"""
 
