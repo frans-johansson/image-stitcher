@@ -55,7 +55,13 @@ class PanoramaCompositor:
         self.composite = np.full([self.num_images, self.height, self.width, 3], -1, dtype="int8")
         self.weights = np.full([self.num_images, self.height, self.width, 1], 0.0, dtype="float32")
 
+        # Paste in the reference image and its weight map
         self.composite[self.reference_img] = self._perspective_transformation(self.images[self.reference_img], np.eye(3))
+        self.weights[self.reference_img] = self._perspective_transformation(
+            self._compute_image_weights(self.reference_img),
+            np.eye(3),
+            fill_value=0.0
+        )
 
         self._run()
 
@@ -146,7 +152,9 @@ class PanoramaCompositor:
         """
         h = self._compute_homography(img)
         self.composite[img] = self._perspective_transformation(self.images[img], h)
-
+        img_weights = self._compute_image_weights(img)
+        self.weights[img] = self._perspective_transformation(img_weights, h, fill_value=0.0)
+        
         print(f"Added image {img}")
 
     def _run(self) -> None:
