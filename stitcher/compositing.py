@@ -170,19 +170,23 @@ class PanoramaCompositor:
         """
         warped_im = np.full((self.height, self.width, img.shape[2]), -1)   
         h_inv = np.linalg.inv(h)
-        for u in range(warped_im.shape[1]):
-            for v in range(warped_im.shape[0]):
-                coord = h_inv @ np.array(
-                [
-                    u + self.offset[0],
-                    v + self.offset[1],
-                    1
-                ]
-                )
-                u_1 = (coord[0] / coord[2]).round().astype("int")
-                v_1 = (coord[1] / coord[2]).round().astype("int")
-                if u_1 >= 0 and v_1 >= 0 and u_1 < img.shape[1] and v_1 < img.shape[0]:
-                    warped_im[v, u] = img[v_1, u_1]
+
+        u = range(warped_im.shape[1])
+        v = range(warped_im.shape[0])
+        mesh_u, mesh_v = np.meshgrid(u, v)
+
+        coords = np.concatenate((mesh_u[:,:,np.newaxis], mesh_v[:,:,np.newaxis], np.ones(mesh_u[:,:,np.newaxis].shape)), axis = 2)
+        coords = coords[:, :, :, np.newaxis]
+        coords[:, :, 0] += self.offset[0]
+        coords[:, :, 1] += self.offset[1]
+
+        proj_coord = h_inv[np.newaxis, np.newaxis, :, :] @ coords
+        u_1 = np.squeeze((proj_coord[:, :, 0] / proj_coord[:, :, 2]).round().astype("int"))
+        v_1 = np.squeeze((proj_coord[:, :, 1] / proj_coord[:, :, 2]).round().astype("int"))
+
+        mask = (u_1 >=0 ) & (v_1 >= 0) & (u_1 < img.shape[1]) & (v_1 < img.shape[0])
+        
+        warped_im[mask] = img[v_1[mask], u_1[mask]]
 
         return warped_im
 
