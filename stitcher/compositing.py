@@ -194,15 +194,16 @@ class PanoramaCompositor:
 
         return h
 
-    def _perspective_transformation(self, img: np.ndarray, h: np.ndarray):
+    def _perspective_transformation(self, img: np.ndarray, h: np.ndarray, fill_value=-1):
         """Performs perspective transformation of an image onto the reference image, given the homography matrix between the image pair.
             Adds the transformed image to a image with (height, width) as the composite, given an offset based on the reference image.
 
         Args:
             img: Image that will be transformed.
             h: Homography matrix
+            fill_value: The values of the output image where nothing has been copied
         """
-        warped_im = np.full((self.height, self.width, img.shape[2]), -1)   
+        warped_im = np.full((self.height, self.width, img.shape[2]), fill_value).astype(img.dtype)
         h_inv = np.linalg.inv(h)
         for u in range(warped_im.shape[1]):
             for v in range(warped_im.shape[0]):
