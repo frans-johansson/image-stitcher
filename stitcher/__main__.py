@@ -31,6 +31,10 @@ if __name__ == "__main__":
         "--rescale-factor", help="Rescale factor applied to each image in the output",
         type=float, default=0.8
     )
+    argparser.add_argument(
+        "--bands", help="The number of bands to compute for multi-band blending",
+        type=int, default=3
+    )
 
     args = argparser.parse_args()
 
@@ -78,7 +82,7 @@ if __name__ == "__main__":
     compositor = PanoramaCompositor(image_collection, feature_handler)
     compositor = GainCompensator(compositor).gain_compensate()
 
-    multi_band_result = MultiBandBlender(compositor).render(bands=6, sigma=1.0)
+    multi_band_result = MultiBandBlender(compositor).render(bands=args.bands)
     no_blend_result = NoBlender(compositor).render()
     linear_result = LinearBlender(compositor).render()
 

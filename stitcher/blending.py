@@ -2,6 +2,7 @@
 
 import numpy as np
 import scipy.ndimage
+import cv2
 from stitcher.compositing import PanoramaCompositor
 
 def blend_linearly(composite: np.ndarray, weights: np.ndarray) -> np.ndarray:
@@ -71,49 +72,40 @@ class MultiBandBlender:
         self.hard_mask = (compositor.weights > 0.0)
         self.mask *= self.hard_mask
 
-    def render(self, bands, sigma=1.0) -> np.ndarray:
+    def render(self, bands) -> np.ndarray:
         """
         Renders and returns the final panorama image
         
         Args:
             bands: The number of bands to use for rendering
-            sigma: The initial value of sigma for the first band
         """
-        # img = np.zeros((*self.composite.shape[1:3], 3), dtype="float32")
-        N = self.composite.shape[0]
+        N = self.composite.shape[0]  # Number of images
+        I = [np.copy(self.composite).astype("float32")]  # Gaussians
+        L = []  # Laplacians
+        M = [np.copy(self.mask)]  # Masks
+
+        # Reduction step, move down the pyramid and compute Laplacians
+        for k in range(1, bands):
+            up_height, up_width = I[k-1].shape[1:3]
+            up_size = (up_width, up_height)  # OpenCV makes me sad sometimes :'(
+            I_k = [cv2.pyrDown(I[k-1][n, ...]) for n in range(N)]
+            M_k = [cv2.pyrDown(M[k-1][n, ...]) for n in range(N)]
+            I.append(np.stack(I_k))
+            M.append(np.stack(M_k)[..., np.newaxis])
+            L_k = [I[k-1][n, ...] - cv2.resize(cv2.pyrUp(I[k][n, ...]), up_size) for n in range(N)]
+            L.append(np.stack(L_k))
+
+        L.append(I[bands-1])  # Append the peak of the pyramid, just the Gaussian
         
-        M = np.zeros((bands+1, *self.composite.shape[:3], 1))  # Mask, (bands, image, height, width, 1)
-        I = np.zeros((bands+1, *self.composite.shape))  # Gaussian, (bands, image, height, width, RGB)
-        L = np.zeros_like(I)  # Laplacian, (bands, image, height, width, RGB)
+        # Fusion step, blend the images in each band layer
+        blended = [blend_linearly(l, m) for l, m in zip(L, M)]
+        B = blended[-1]
 
-        # NOTE: The 0th band refers to the original images here
-        M[0] = np.copy(self.mask)
-        I[0] = np.copy(self.composite)
-        L[0] = np.copy(self.composite)
+        # Expansion step, move up the pyramid
+        for k in range(bands-1, 0, -1):
+            up_height, up_width = blended[k-1].shape[:2]
+            up_size = (up_width, up_height)  # OpenCV makes me even more sad sometimes :'(
+            B = cv2.resize(cv2.pyrUp(B), up_size) + blended[k-1]
 
-        # Compute Gaussian pyramid for images and masks
-        for k in range(1, bands+1):
-            # Compute the next band
-            sigma_k = np.sqrt(2*k+1)*sigma
-
-            for n in range(N):  # Iterate over all images separately
-                I[k, n, ..., 0] = scipy.ndimage.gaussian_filter(I[k-1, n, ..., 0], sigma_k)
-                I[k, n, ..., 1] = scipy.ndimage.gaussian_filter(I[k-1, n, ..., 1], sigma_k)
-                I[k, n, ..., 2] = scipy.ndimage.gaussian_filter(I[k-1, n, ..., 2], sigma_k)
-                M[k, n, ...] = scipy.ndimage.gaussian_filter(M[k-1, n, ...], sigma_k)
-
-            M[k, ...] *= self.hard_mask
-            I[k, ...] *= self.hard_mask
-
-        # Compute Laplacians
-        L[1:bands] = I[1:bands, ...] - I[0:bands-1, ...]
-        L[bands] = I[bands]
-
-        # Images need to come first for blending
-        M = np.transpose(M[1:], [1, 0, 2, 3, 4])
-        L = np.transpose(L[1:], [1, 0, 2, 3, 4])
+        return normalize_image(B) * np.any(self.hard_mask, axis=0)
         
-        # Blend, aggregate and normalize
-        img = blend_linearly(L, M)
-        img = np.sum(img, axis=0)
-        return normalize_image(img)
