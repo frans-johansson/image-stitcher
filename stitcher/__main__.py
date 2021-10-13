@@ -44,48 +44,19 @@ if __name__ == "__main__":
         rescale_factor=args.rescale_factor
     )
 
-    # TEST: Display all the images
-    # cv2.namedWindow("Test image collection")
-
-    # for image in image_collection.low_res_images:
-    #     cv2.imshow("Test image collection", image)
-    #     cv2.waitKey(0)
-
-    # cv2.destroyAllWindows()
-    # END TEST
-
     # Detect and match features
     feature_handler = FeatureHandler(image_collection.low_res_images)
 
-    # TEST: Visualize some correspondences
-    # matches = feature_handler.feature_matches
-
-    # for i, i_matches in matches.items():
-    #     for j, ij_matches in i_matches.items():
-    #         ms = ij_matches
-    #         sorted(ms, key=lambda x: x.distance)
-
-    #         kp1 = feature_handler.image_features[i].getKeypoints()
-    #         kp2 = feature_handler.image_features[j].getKeypoints()
-    #         img1 = image_collection.low_res_images[i]
-    #         img2 = image_collection.low_res_images[j]
-
-    #         print(f"Showing {len(ms)} matches")
-
-    #         match_img = cv2.drawMatches(img1, kp1, img2, kp2, ms, img2, flags=2)
-    #         cv2.imshow(f"Test features, images: {(i, j)}", match_img)
-    #         cv2.waitKey(0)
-
-    # cv2.destroyAllWindows()
-    # END TEST
-
+    # Compositing and gain compensation
     compositor = PanoramaCompositor(image_collection, feature_handler)
     compositor = GainCompensator(compositor).gain_compensate()
 
+    # Render results with blending
     multi_band_result = MultiBandBlender(compositor).render(bands=args.bands)
     no_blend_result = NoBlender(compositor).render()
     linear_result = LinearBlender(compositor).render()
 
+    # Save the results
     timestamp = dt.datetime.now().strftime("%d%m%y_%H%M")
     cv2.imwrite(f"img/{args.output}_{timestamp}_linear.jpg", linear_result)
     cv2.imwrite(f"img/{args.output}_{timestamp}_no_blend.jpg", no_blend_result)
