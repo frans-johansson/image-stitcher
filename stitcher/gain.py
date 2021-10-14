@@ -117,13 +117,14 @@ class GainCompensator:
         g = self._calculate_gain()
 
         # Multiply with the gain in pixels that do not have value -1, let those pixels keep the value -1
-        imgs = np.where(self.composite != -1, g[:, np.newaxis, np.newaxis, np.newaxis] * self.composite, -1)
+        #imgs = np.where(self.composite != -1, g[:, np.newaxis, np.newaxis, np.newaxis] * self.composite, -1)
+        self.composite = g[:, np.newaxis, np.newaxis, np.newaxis] * self.composite
 
         # Rescale the values to be integers between 0-255, except for non-pixel values that are -1
-        imgs = (imgs / np.max(imgs)) * 255
-        imgs[imgs < 0] = - 1
-        imgs = np.floor(imgs)
+        #self.composite = (self.composite / np.max(self.composite)) * 255
+        #self.composite[self.composite < 0] = -1
+        self.composite = np.floor(self.composite)
 
-        self.compositor.composite = imgs
+        self.compositor.composite = self.composite.astype("int")
 
         return self.compositor

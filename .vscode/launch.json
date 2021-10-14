@@ -35,6 +35,40 @@
                 "--output", "waterfall",
                 "--rescale-factor", "0.5"
             ]
+        },
+        {
+            "name": "Stitcher: lunchroom",
+            "type": "python",
+            "request": "launch",
+            "module": "stitcher",
+            "args": [
+                "--path","img/lunchroom",
+                "--output", "lunchroom",
+                "--rescale-factor", "0.2"
+            ]
+        },
+        {
+            "name": "Stitcher: TP6_Matilda",
+            "type": "python",
+            "request": "launch",
+            "module": "stitcher",
+            "bands": 6,
+            "args": [
+                "--path","img/TP6_Matilda",
+                "--output", "TP6_Matilda",
+                "--rescale-factor", "0.5"
+            ]
+        },
+        {
+            "name": "Stitcher: TP6_Astrid",
+            "type": "python",
+            "request": "launch",
+            "module": "stitcher",
+            "args": [
+                "--path","img/TP6_Astrid",
+                "--output", "TP6_Astrid",
+                "--rescale-factor", "0.2"
+            ]
         }
     ]
 }

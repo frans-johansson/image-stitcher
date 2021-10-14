@@ -44,7 +44,7 @@ class PanoramaCompositor:
         self.matches = feature_handler.feature_matches
         self.features = feature_handler.image_features
 
-        self.images = images.high_res_images
+        self.images = [img.astype("int") for img in images.high_res_images]
 
         self.overlaps = {i: {j for j in self.matches[i].keys()} for i in self.matches.keys()}
         self.reference_img = self._find_reference_img()

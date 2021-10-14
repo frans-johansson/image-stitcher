@@ -38,11 +38,11 @@ class NoBlender:
 
     def render(self) -> None:
         """Renders and returns a final panorama image"""
-        img = np.zeros((self.height, self.width, 3), dtype="uint8")
+        img = np.zeros((self.height, self.width, 3), dtype="int")
         for i, layer in enumerate(self.composite):
             w = (self.weights[i] > 0).squeeze(2)
             img[w] = layer[w]
-        return img
+        return normalize_image(img)
 
 
 class LinearBlender:
@@ -57,7 +57,7 @@ class LinearBlender:
         """Renders and returns a final panorama image using exponential weighting"""
         exp_weight = self.weights ** p
         img = blend_linearly(self.composite, exp_weight)
-        return img.astype("uint8")
+        return normalize_image(img)
 
 
 class MultiBandBlender:
