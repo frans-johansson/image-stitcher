@@ -1,5 +1,6 @@
 """Main entry point for the image stitching program"""
 
+import argparse
 import datetime as dt
 from argparse import ArgumentParser
 from pathlib import Path
@@ -35,6 +36,14 @@ if __name__ == "__main__":
         "--bands", help="The number of bands to compute for multi-band blending",
         type=int, default=3
     )
+    argparser.add_argument(
+        "--exponent", help="Sets the exponent applied to the weights during linear blending",
+        type=float, default=1.0
+    )
+    argparser.add_argument(
+        "--use-gain-compensation", help="Perform gain compensation on all the panorama images",
+        action="store_true"
+    )
 
     args = argparser.parse_args()
 
@@ -49,12 +58,13 @@ if __name__ == "__main__":
 
     # Compositing and gain compensation
     compositor = PanoramaCompositor(image_collection, feature_handler)
-    compositor = GainCompensator(compositor).gain_compensate()
+    if args.use_gain_compensation:
+        compositor = GainCompensator(compositor).gain_compensate()
 
     # Render results with blending
     multi_band_result = MultiBandBlender(compositor).render(bands=args.bands)
+    linear_result = LinearBlender(compositor).render(p=args.exponent)
     no_blend_result = NoBlender(compositor).render()
-    linear_result = LinearBlender(compositor).render()
 
     # Save the results
     timestamp = dt.datetime.now().strftime("%d%m%y_%H%M")

@@ -53,9 +53,10 @@ class LinearBlender:
         self.composite = compositor.composite
         self.weights = compositor.weights
 
-    def render(self) -> np.ndarray:
-        """Renders and returns a final panorama image"""
-        img = blend_linearly(self.composite, self.weights)
+    def render(self, p=1.0) -> np.ndarray:
+        """Renders and returns a final panorama image using exponential weighting"""
+        exp_weight = self.weights ** p
+        img = blend_linearly(self.composite, exp_weight)
         return img.astype("uint8")
 
 
